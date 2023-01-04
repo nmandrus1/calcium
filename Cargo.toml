@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A library for creating calendars with events"
-repository = "https://github.com/nmandrus1/calcium.git"
+repository = "https://github.com/nmandrus1/calib.git"
 read-me = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
