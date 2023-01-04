@@ -1,3 +1,3 @@
-# calcium
+# calib
 
-Library for a creating a calendar with events 
+Calib (pronounced like Caleb) is a library for a creating and editing a calendar
