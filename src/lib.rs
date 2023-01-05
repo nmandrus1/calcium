@@ -18,10 +18,32 @@ pub enum EventError {
     InvalidEndTime,
 }
 
-// NOTE: How to represent events that last multiple days?
-// NOTE: In the future it migh be worth trying to remove the Day struct, it feels redundant
-//       Maybe a Vector or Hashmap of Events makes sense? Suppose a request
-//       was made to get all of the events given some time range,
+/// returns a NaiveTime of 11:59:59
+///
+/// # Examples
+/// ```
+/// use calib::day_end;
+/// use chrono::NaiveTime;
+///
+/// let last_time_of_day = day_end();
+/// assert_eq!(last_time_of_day, NaiveTime::from_hms_opt(23, 59, 59).unwrap())
+/// ```
+pub fn day_end() -> chrono::NaiveTime {
+    chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap()
+}
+
+/// returns a NaiveTime of 00:00:00
+/// /// # Examples
+/// ```
+/// use calib::day_start;
+/// use chrono::NaiveTime;
+///
+/// let first_time_of_day = day_start();
+/// assert_eq!(first_time_of_day, NaiveTime::from_hms_opt(0, 0, 0).unwrap())
+/// ```
+pub fn day_start() -> chrono::NaiveTime {
+    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap()
+}
 
 #[cfg(test)]
 mod test {
@@ -86,7 +108,7 @@ mod test {
         let new_start_time = NaiveTime::from_hms_opt(10, 30, 0).unwrap();
 
         event = event
-            .with_start(NaiveDateTime::new(naive_date, new_start_time))
+            .set_start(NaiveDateTime::new(naive_date, new_start_time))
             .unwrap();
         assert_eq!(
             event.start(),
@@ -105,7 +127,7 @@ mod test {
         let new_end_time = NaiveTime::from_hms_opt(22, 30, 0).unwrap();
 
         event = event
-            .with_end(NaiveDateTime::new(naive_date, new_end_time))
+            .set_end(NaiveDateTime::new(naive_date, new_end_time))
             .unwrap();
 
         assert_eq!(event.end(), NaiveDateTime::new(naive_date, new_end_time))
@@ -121,13 +143,13 @@ mod test {
         let mut event = Event::new("Birthday".into(), &naive_date);
 
         event = event
-            .with_start(NaiveDateTime::new(naive_date, start_time))
+            .set_start(NaiveDateTime::new(naive_date, start_time))
             .unwrap();
 
         assert_eq!(
             true,
             event
-                .with_end(NaiveDateTime::new(naive_date, invalid_end_time))
+                .set_end(NaiveDateTime::new(naive_date, invalid_end_time))
                 .is_err()
         );
     }
@@ -156,7 +178,7 @@ mod test {
 
         // update start time
         event = event
-            .with_start(NaiveDateTime::new(naive_date, new_start_time))
+            .set_start(NaiveDateTime::new(naive_date, new_start_time))
             .unwrap();
 
         assert_eq!(
@@ -169,18 +191,18 @@ mod test {
 
         // update end time
         event = event
-            .with_end(NaiveDateTime::new(naive_date, new_end_time))
+            .set_end(NaiveDateTime::new(naive_date, new_end_time))
             .unwrap();
 
         assert_eq!(event.end(), NaiveDateTime::new(naive_date, new_end_time));
 
         // try to set invalid start time
-        let status = event.with_start(NaiveDateTime::new(naive_date, last_time));
+        let status = event.set_start(NaiveDateTime::new(naive_date, last_time));
         assert_eq!(true, status.is_err());
 
         // try to set invalid end time
         let event = Event::new(String::from("Birthday Party"), &naive_date);
-        let status = event.with_end(NaiveDateTime::new(naive_date, first_time));
+        let status = event.set_end(NaiveDateTime::new(naive_date, first_time));
         assert_eq!(true, status.is_err());
     }
 
@@ -192,17 +214,17 @@ mod test {
 
         // 01/01/2023-00:00:00 < 01/01/2023-00:00:01
         let mut d2 = Event::new("A".into(), &ndt.date());
-        d2 = d2.with_start(d1.start().with_second(1).unwrap()).unwrap();
+        d2 = d2.set_start(d1.start().with_second(1).unwrap()).unwrap();
         assert_eq!(d1.cmp(&d2), Ordering::Less);
 
         // 01/01/2023-00:00:00 < 01/01/2023-00:01:00
         let mut d3 = Event::new("A".into(), &ndt.date());
-        d3 = d3.with_start(d1.start().with_minute(1).unwrap()).unwrap();
+        d3 = d3.set_start(d1.start().with_minute(1).unwrap()).unwrap();
         assert_eq!(d1.cmp(&d3), Ordering::Less);
 
         // 01/01/2023-00:00:00 < 01/01/2023-01:00:00
         let mut d4 = Event::new("A".into(), &ndt.date());
-        d4 = d4.with_start(d1.start().with_hour(1).unwrap()).unwrap();
+        d4 = d4.set_start(d1.start().with_hour(1).unwrap()).unwrap();
         assert_eq!(d1.cmp(&d4), Ordering::Less);
 
         // 01/01/2023-00:00:00 < 01/01/2024-00:00:00
@@ -211,14 +233,14 @@ mod test {
 
         // 01/01/2023-00:00:00 < 01/02/2023-00:00:00
         let mut d6 = Event::new("A".into(), &ndt.date());
-        d6 = d6.with_end(d1.start().with_day(3).unwrap()).unwrap();
-        d6 = d6.with_start(d1.start().with_day(2).unwrap()).unwrap();
+        d6 = d6.set_end(d1.start().with_day(3).unwrap()).unwrap();
+        d6 = d6.set_start(d1.start().with_day(2).unwrap()).unwrap();
         assert_eq!(d1.cmp(&d6), Ordering::Less);
 
         // 01/01/2023-00:00:00 < 02/01/2023-00:00:00
         let mut d7 = Event::new("A".into(), &ndt.date());
-        d7 = d7.with_end(d1.start().with_month(3).unwrap()).unwrap();
-        d7 = d7.with_start(d1.start().with_month(2).unwrap()).unwrap();
+        d7 = d7.set_end(d1.start().with_month(3).unwrap()).unwrap();
+        d7 = d7.set_start(d1.start().with_month(2).unwrap()).unwrap();
         assert_eq!(d1.cmp(&d7), Ordering::Less);
     }
 
@@ -231,15 +253,24 @@ mod test {
         let nd5 = nd1.with_day(5).unwrap();
 
         let e1 = Event::new("A".into(), &nd1);
-        let e2 = Event::new("A".into(), &nd2);
-        let e3 = Event::new("A".into(), &nd3);
-        let e4 = Event::new("A".into(), &nd4);
-        let e5 = Event::new("A".into(), &nd5);
 
+        let e2 = Event::new("B".into(), &nd2);
+        let e2_id = *e2.id();
+
+        let e3 = Event::new("C".into(), &nd3);
+        let e3_id = *e3.id();
+
+        let e4 = Event::new("D".into(), &nd4);
+        let e4_id = *e4.id();
+
+        let e5 = Event::new("E".into(), &nd5);
+
+        // range is from 01/02/2023T11:00:00 to 01/04/2023T23:59:59
         let range_start = NaiveDateTime::new(nd2, NaiveTime::from_hms_opt(11, 0, 0).unwrap());
-        let range_end = NaiveDateTime::new(nd4, last_time_nt());
+        let range_end = NaiveDateTime::new(nd4, day_end());
 
         let mut cal = EventCalendar::default();
+
         cal.add_event(e1);
         cal.add_event(e2);
         cal.add_event(e3);
@@ -247,18 +278,10 @@ mod test {
         cal.add_event(e5);
 
         let mut iter = cal.events_in_range(range_start, range_end);
-        assert_eq!(
-            iter.next().map(|(_, e)| e),
-            Some(&Event::new("A".into(), &nd2))
-        );
-        assert_eq!(
-            iter.next().map(|(_, e)| e),
-            Some(&Event::new("A".into(), &nd3))
-        );
-        assert_eq!(
-            iter.next().map(|(_, e)| e),
-            Some(&Event::new("A".into(), &nd4))
-        );
+
+        assert_eq!(iter.next(), cal.get(&e2_id));
+        assert_eq!(iter.next(), cal.get(&e3_id));
+        assert_eq!(iter.next(), cal.get(&e4_id));
         assert_eq!(iter.next(), None);
     }
 
@@ -266,6 +289,7 @@ mod test {
     fn test_event_serialize() {
         let nd = first_day_2023_nd();
         let e = Event::new("A".into(), &nd);
+        let id = e.id().to_string();
 
         let first_time = first_day_2023_ndt().format("%Y-%m-%dT%H:%M:%S").to_string();
         let last_time = NaiveDateTime::new(nd, last_time_nt())
@@ -274,7 +298,7 @@ mod test {
 
         assert_eq!(
             e.serialize(),
-            format!("{{\"start\":\"{first_time}\",\"end\":\"{last_time}\",\"name\":\"A\"}}",)
+            format!("{{\"start\":\"{first_time}\",\"end\":\"{last_time}\",\"name\":\"A\",\"id\":\"{id}\"}}",)
         )
     }
 }

@@ -1,4 +1,4 @@
-use super::EventError;
+use super::*;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::Serialize;
 use uuid::Uuid;
@@ -6,7 +6,7 @@ use uuid::Uuid;
 // NOTE: Keep fields in order based on how comparisons should go,
 // see Ord/PartialOrd Trait derive documentation
 /// Struct to represent a given event on the calendar
-#[derive(PartialOrd, Ord, PartialEq, Eq, Debug, Serialize)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Clone)]
 pub struct Event {
     start: NaiveDateTime,
     end: NaiveDateTime,
@@ -45,14 +45,14 @@ impl Event {
     pub fn new(name: String, date: &NaiveDate) -> Self {
         Self {
             name,
-            start: NaiveDateTime::new(*date, NaiveTime::from_hms_opt(0, 0, 0).unwrap()),
-            end: NaiveDateTime::new(*date, NaiveTime::from_hms_opt(23, 59, 59).unwrap()),
+            start: NaiveDateTime::new(*date, day_start()),
+            end: NaiveDateTime::new(*date, day_end()),
             id: Uuid::new_v4(),
         }
     }
 
-    /// Set/Change an event's start time
-    pub fn with_start(self, start: NaiveDateTime) -> Result<Self, EventError> {
+    /// Set/Change the date and time of the start field
+    pub fn set_start(self, start: NaiveDateTime) -> Result<Self, EventError> {
         // check how many seconds from the start time the end time is, if the value
         // is negative that means the start time is AFTER the end time which
         // results in an InvalidStartTime error, on success returns the new start time
@@ -65,13 +65,84 @@ impl Event {
         }
     }
 
-    pub fn with_end(self, end: NaiveDateTime) -> Result<Self, EventError> {
+    /// Set/Change an event's start time
+    pub fn set_start_time(self, start: NaiveTime) -> Result<Self, EventError> {
+        // check how many seconds from the start time the end time is, if the value
+        // is negative that means the start time is AFTER the end time which
+        // results in an InvalidStartTime error, on success returns the new start time
+        let new_start = NaiveDateTime::new(self.start.date(), start);
+        if Event::start_end_times_valid(&new_start, &self.end) {
+            // lol literally the first time ive used this syntax
+            Ok(Event {
+                start: new_start,
+                ..self
+            })
+        } else {
+            // if the new start time is invalid then return an error
+            Err(EventError::InvalidStartTime)
+        }
+    }
+
+    /// Set/Change an event's start date
+    pub fn set_start_date(self, start: NaiveDate) -> Result<Self, EventError> {
+        // check how many seconds from the start time the end time is, if the value
+        // is negative that means the start time is AFTER the end time which
+        // results in an InvalidStartTime error, on success returns the new start time
+        let new_start = NaiveDateTime::new(start, self.start.time());
+        if Event::start_end_times_valid(&new_start, &self.end) {
+            // lol literally the first time ive used this syntax
+            Ok(Event {
+                start: new_start,
+                ..self
+            })
+        } else {
+            // if the new start time is invalid then return an error
+            Err(EventError::InvalidStartTime)
+        }
+    }
+
+    /// Set/Change the date and time of the end field
+    pub fn set_end(self, end: NaiveDateTime) -> Result<Self, EventError> {
         // check how many seconds from the end time the start time is, if the value
         // is negative that means the start time is AFTER the end time which
         // results in an InvalidEndTime error, on success returns new end time
         if Event::start_end_times_valid(&self.start, &end) {
             // previous end time is overwritten
             Ok(Event { end, ..self })
+        } else {
+            Err(EventError::InvalidEndTime)
+        }
+    }
+
+    /// Set/Change the time of the end field
+    pub fn set_end_time(self, end: NaiveTime) -> Result<Self, EventError> {
+        // check how many seconds from the end time the start time is, if the value
+        // is negative that means the start time is AFTER the end time which
+        // results in an InvalidEndTime error, on success returns new end time
+        let new_end = NaiveDateTime::new(self.end.date(), end);
+        if Event::start_end_times_valid(&self.start, &new_end) {
+            // previous end time is overwritten
+            Ok(Event {
+                end: new_end,
+                ..self
+            })
+        } else {
+            Err(EventError::InvalidEndTime)
+        }
+    }
+
+    /// Set/Change the date of the end field
+    pub fn set_end_date(self, end: NaiveDate) -> Result<Self, EventError> {
+        // check how many seconds from the end time the start time is, if the value
+        // is negative that means the start time is AFTER the end time which
+        // results in an InvalidEndTime error, on success returns new end time
+        let new_end = NaiveDateTime::new(end, self.end.time());
+        if Event::start_end_times_valid(&self.start, &new_end) {
+            // previous end time is overwritten
+            Ok(Event {
+                end: new_end,
+                ..self
+            })
         } else {
             Err(EventError::InvalidEndTime)
         }
