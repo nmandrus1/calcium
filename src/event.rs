@@ -159,13 +159,66 @@ impl Event {
 }
 
 #[cfg(test)]
-mod test {
+mod event_tests {
     use super::test_fns::*;
     use super::*;
     use chrono::{Datelike, Timelike};
 
+    /// Event titled "A" on 1/1/2023 from 00:00:00-23:59:59
+    fn basic_event() -> Event {
+        Event::new("A".into(), &first_day_2023_nd())
+    }
+
     #[test]
-    fn test_event_start_time_change() {
+    fn test_change_end_date() {
+        let mut event = basic_event();
+        let id = *event.id();
+        let new_date = NaiveDate::from_ymd_opt(2023, 1, 2).unwrap();
+
+        event = event.set_end_date(new_date).unwrap();
+        assert_eq!(event.end().date(), new_date);
+        assert_eq!(*event.id(), id);
+    }
+
+    #[test]
+    fn test_change_end_time() {
+        let mut event = basic_event();
+        let id = *event.id();
+        let new_time = NaiveTime::from_hms_opt(10, 0, 0).unwrap();
+
+        event = event.set_end_time(new_time).unwrap();
+        assert_eq!(event.end().time(), new_time);
+        assert_eq!(*event.id(), id);
+    }
+
+    #[test]
+    fn test_change_start_date() {
+        let mut event = basic_event();
+        event = event
+            .set_end_date(NaiveDate::from_ymd_opt(2023, 1, 3).unwrap())
+            .unwrap();
+
+        let id = *event.id();
+        let new_date = NaiveDate::from_ymd_opt(2023, 1, 2).unwrap();
+
+        event = event.set_start_date(new_date).unwrap();
+        assert_eq!(event.start().date(), new_date);
+        assert_eq!(*event.id(), id);
+    }
+
+    #[test]
+    fn test_change_start_time() {
+        let mut event = basic_event();
+        let id = *event.id();
+        let new_time = NaiveTime::from_hms_opt(10, 0, 0).unwrap();
+
+        event = event.set_start_time(new_time).unwrap();
+        assert_eq!(event.start().time(), new_time);
+        assert_eq!(*event.id(), id);
+    }
+
+    #[test]
+    fn test_event_start_change() {
         // basic date declaration
         let naive_date = first_day_2023_nd();
 
