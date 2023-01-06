@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use uuid::Uuid;
 
-use super::event::Event;
+use super::{event::Event, IntoUuid};
 
 // Maybe use a BTreeSet to keep events in chronological order
 // and then add a second field which is a Hashmap<UUID, &Event>
@@ -44,7 +44,7 @@ impl EventCalendar {
     }
 
     /// return a reference to an event from it's ID
-    pub fn get(&self, id: &Uuid) -> Option<&Rc<Event>> {
-        self.ids.get(id)
+    pub fn get<T: IntoUuid>(&self, id: T) -> Option<&Rc<Event>> {
+        self.ids.get(&id.into_uuid())
     }
 }

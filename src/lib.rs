@@ -5,6 +5,30 @@ mod event;
 
 pub use cal::EventCalendar;
 pub use event::Event;
+use uuid::Uuid;
+
+pub trait IntoUuid {
+    fn into_uuid(self) -> Uuid;
+}
+
+impl IntoUuid for &str {
+    fn into_uuid(self) -> Uuid {
+        use std::str::FromStr;
+        Uuid::from_str(self).unwrap() // this is bad and will need to be fixed
+    }
+}
+
+impl IntoUuid for &Uuid {
+    fn into_uuid(self) -> Uuid {
+        *self
+    }
+}
+
+impl IntoUuid for Uuid {
+    fn into_uuid(self) -> Uuid {
+        self
+    }
+}
 
 /// Basic Errors that can occur for events
 #[derive(Error, Debug)]
